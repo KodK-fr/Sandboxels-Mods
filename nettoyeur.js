@@ -1,46 +1,50 @@
-// Nettoyeur - Supprime tout sauf Insulator et Glass
-// Compatible Sandboxels Modding API officielle
+// Nettoyeur Liquide - Supprime tout sauf Insulator et Glass
+// Basé sur l'exemple R74n deletion code
 
-elements.Net = {
+elements.net = {
     name: "Net",
-    type: "liquid",
     color: "#aa00ff",
+    type: "liquid",
     density: 1000,
     viscosity: 0.01,
     category: "special",
-    desc: "Supprime eau, gaz, poudres, solides sauf Insulator et Glass",
+    desc: "Supprime tout sauf Insulator et Glass",
+    state: "liquid",
+    stateHigh: "fire",
+    tempHigh: 500,
     
-    // Behavior standard : check tous les voisins
     tick: function(pixel) {
-        // Voisins 3x3 (sauf lui-même)
-        for (let nx = -1; nx <= 1; nx++) {
-            for (let ny = -1; ny <= 1; ny++) {
-                if (nx === 0 && ny === 0) continue;
+        var coordsToCheck = [
+            [pixel.x-1,pixel.y],
+            [pixel.x+1,pixel.y],
+            [pixel.x,pixel.y-1],
+            [pixel.x,pixel.y+1],
+            [pixel.x-1,pixel.y-1],
+            [pixel.x+1,pixel.y-1],
+            [pixel.x-1,pixel.y+1],
+            [pixel.x+1,pixel.y+1]
+        ];
+        
+        for (var i = 0; i < coordsToCheck.length; i++) {
+            var coord = coordsToCheck[i];
+            if (!isEmpty(coord[0],coord[1],true)) {
+                var newPixel = pixelMap[coord[0]][coord[1]];
+                var elState = elements[newPixel.element].state;
+                var elName = newPixel.element;
                 
-                let x2 = pixel.x + nx;
-                let y2 = pixel.y + ny;
-                
-                if (!isEmpty(x2, y2) && isInBounds(x2, y2)) {
-                    let touched = pixelMap[x2][y2];
-                    
-                    // SUPPRIME TOUT sauf exceptions
-                    if (touched.element !== "Net" && 
-                        touched.element !== "insulator" && 
-                        touched.element !== "glass") {
-                        deletePixel(x2, y2);
-                    }
+                // SUPPRIME TOUT sauf exceptions
+                if (elName !== "net" && elName !== "insulator" && elName !== "glass") {
+                    deletePixel(coord[0],coord[1]);
                 }
             }
         }
         
-        // Se consume lentement (équilibrage)
-        if (Math.random() < 0.015) {
+        // Se consume lentement
+        if (Math.random() < 0.01) {
             deletePixel(pixel.x, pixel.y);
         }
     }
 };
 
-// Réaction optionnelle : eau → vapeur
-elements.water.reactions.Net = {
-    "1": [1, "steam"]
-};
+// Ignore par l'acide (comme dans l'exemple)
+elements.acid.ignore.push("net");
