@@ -9,11 +9,7 @@ function sendButtonElectricity(pixel, diagonal = true) {
         const n = getPixel(pixel.x + dx, pixel.y + dy);
 
         if (n && n.conduct > 0) {
-            if (typeof chargePixel === "function") {
-                chargePixel(n);
-            } else {
-                n.charge = 1;
-            }
+            chargePixel(n);
         }
     }
 }
@@ -29,16 +25,12 @@ elements.e_button = {
     hardness: 0.2,
     conduct: 1,
     desc: "Clique dessus pour envoyer une impulsion électrique aux voisins.",
-    
-    onMouseDown: function() {
-    console.log("CLIC GAUCHE DÉTECTÉ !");
-    },
 
     onClicked: function(pixel) {
-        console.log("PIXEL CLIQUÉ :", pixel);
-        chargePixel(pixel);
-    },
-    };
+        console.log("E-BUTTON ACTIVÉ !");
+        sendButtonElectricity(pixel, true);
+    }
+};
 
 elements.push_button = {
     name: "Push Button",
@@ -52,8 +44,9 @@ elements.push_button = {
     conduct: 1,
     desc: "Clique pour allumer ou éteindre le courant.",
 
-    onClicked: function(pixel, element) {
+    onClicked: function(pixel) {
         pixel.on = !pixel.on;
+        console.log("PUSH BUTTON :", pixel.on);
     },
 
     tick: function(pixel) {
