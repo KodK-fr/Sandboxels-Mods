@@ -1,4 +1,4 @@
-
+console.log("PUSH.JS CHARGÉ !");
 elements.e_button = {
     name: "E-Button",
     color: "#ff6600",
@@ -75,3 +75,5 @@ elements.push_button = {
         }
     }
 };
+console.log("E-Button enregistré :", elements.e_button);
+console.log("Push Button enregistré :", elements.push_button);
