@@ -1,3 +1,4 @@
+
 elements.e_button = {
     name: "E-Button",
     color: "#ff6600",
@@ -9,24 +10,33 @@ elements.e_button = {
     hardness: 0.2,
     conduct: 1,
     desc: "Clique dessus pour envoyer une impulsion électrique aux voisins.",
-    onClicked: function(pixel, element) {
-        if (pixel.element === "e_button") {
-            pixel.charge = 1;
-        }
+
+    onClicked: function(pixel) {
+        pixel.charge = 1;
     },
+
     tick: function(pixel) {
         if (pixel.charge) {
-            let dirs = [[0,-1],[0,1],[-1,0],[1,0],[-1,-1],[1,-1],[-1,1],[1,1]];
+            let dirs = [
+                [0,-1], [0,1],
+                [-1,0], [1,0],
+                [-1,-1], [1,-1],
+                [-1,1], [1,1]
+            ];
+
             for (let [dx, dy] of dirs) {
                 let n = getPixel(pixel.x + dx, pixel.y + dy);
+
                 if (n && n.conduct > 0) {
                     n.charge = 1;
                 }
             }
+
             delete pixel.charge;
         }
-    },
+    }
 };
+
 
 elements.push_button = {
     name: "Push Button",
@@ -38,18 +48,24 @@ elements.push_button = {
     density: 1200,
     hardness: 0.2,
     conduct: 1,
-    desc: "Clique pour allumer/éteindre le courant vers les voisins.",
-    onClicked: function(pixel, element) {
-        if (pixel.element === "push_button") {
-            pixel.on = !pixel.on;
-        }
+    desc: "Clique pour allumer ou éteindre le courant.",
+
+    onClicked: function(pixel) {
+        pixel.on = !pixel.on;
     },
+
     tick: function(pixel) {
         if (pixel.on) {
             pixel.charge = 1;
-            let dirs = [[0,-1],[0,1],[-1,0],[1,0]];
+
+            let dirs = [
+                [0,-1], [0,1],
+                [-1,0], [1,0]
+            ];
+
             for (let [dx, dy] of dirs) {
                 let n = getPixel(pixel.x + dx, pixel.y + dy);
+
                 if (n && n.conduct > 0) {
                     n.charge = 1;
                 }
@@ -57,5 +73,5 @@ elements.push_button = {
         } else {
             delete pixel.charge;
         }
-    },
-};   
+    }
+};
