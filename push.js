@@ -1,4 +1,23 @@
 
+function sendButtonElectricity(pixel, diagonal = true) {
+    const dirs = diagonal
+        ? [[0,-1],[0,1],[-1,0],[1,0],
+           [-1,-1],[1,-1],[-1,1],[1,1]]
+        : [[0,-1],[0,1],[-1,0],[1,0]];
+
+    for (const [dx, dy] of dirs) {
+        const n = getPixel(pixel.x + dx, pixel.y + dy);
+
+        if (n && n.conduct > 0) {
+            if (typeof chargePixel === "function") {
+                chargePixel(n);
+            } else {
+                n.charge = 1;
+            }
+        }
+    }
+}
+
 elements.e_button = {
     name: "E-Button",
     color: "#ff6600",
@@ -11,32 +30,10 @@ elements.e_button = {
     conduct: 1,
     desc: "Clique dessus pour envoyer une impulsion électrique aux voisins.",
 
-    onClicked: function(pixel) {
-        pixel.charge = 1;
-    },
-
-    tick: function(pixel) {
-        if (pixel.charge) {
-            let dirs = [
-                [0,-1], [0,1],
-                [-1,0], [1,0],
-                [-1,-1], [1,-1],
-                [-1,1], [1,1]
-            ];
-
-            for (let [dx, dy] of dirs) {
-                let n = getPixel(pixel.x + dx, pixel.y + dy);
-
-                if (n && n.conduct > 0) {
-                    n.charge = 1;
-                }
-            }
-
-            delete pixel.charge;
-        }
+    onClicked: function(pixel, element) {
+        sendButtonElectricity(pixel, true);
     }
 };
-
 
 elements.push_button = {
     name: "Push Button",
@@ -50,28 +47,13 @@ elements.push_button = {
     conduct: 1,
     desc: "Clique pour allumer ou éteindre le courant.",
 
-    onClicked: function(pixel) {
+    onClicked: function(pixel, element) {
         pixel.on = !pixel.on;
     },
 
     tick: function(pixel) {
         if (pixel.on) {
-            pixel.charge = 1;
-
-            let dirs = [
-                [0,-1], [0,1],
-                [-1,0], [1,0]
-            ];
-
-            for (let [dx, dy] of dirs) {
-                let n = getPixel(pixel.x + dx, pixel.y + dy);
-
-                if (n && n.conduct > 0) {
-                    n.charge = 1;
-                }
-            }
-        } else {
-            delete pixel.charge;
+            sendButtonElectricity(pixel, false);
         }
     }
 };
