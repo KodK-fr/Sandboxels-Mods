@@ -1,3 +1,25 @@
+// Bouton impulsif : un clic = une impulsion
+elements.e_button = {
+    name: "E-Button",
+    color: "#ff6600",
+    colorOn: "#ffff00",
+    behavior: behaviors.WALL,
+    category: "machines",
+    state: "solid",
+    conduct: 1,
+    desc: "Clique pour envoyer une impulsion électrique aux voisins.",
+    tool: function(pixel) {
+        let dirs = [[0,-1],[0,1],[-1,0],[1,0],[-1,-1],[1,-1],[-1,1],[1,1]];
+        for (let [dx, dy] of dirs) {
+            let n = getPixel(pixel.x + dx, pixel.y + dy);
+            if (n && n.conduct > 0) {
+                chargePixel(n);
+            }
+        }
+    }
+};
+
+// Bouton poussoir : clic = ON (courant continu), re-clic = OFF
 elements.push_button = {
     name: "Push Button",
     color: "#4488ff",
@@ -9,7 +31,8 @@ elements.push_button = {
     desc: "Clique pour allumer/éteindre le courant vers les voisins.",
     tool: function(pixel) {
         pixel.on = !pixel.on;
-        pixel.charge = pixel.on ? 1 : 0;
+        if (pixel.on) pixel.charge = 1;
+        else pixel.charge = 0;
     },
     tick: function(pixel) {
         if (pixel.on) {
@@ -18,27 +41,7 @@ elements.push_button = {
             for (let [dx, dy] of dirs) {
                 let n = getPixel(pixel.x + dx, pixel.y + dy);
                 if (n && n.conduct > 0) {
-                    chargePixel(n, 1);
-                }
-            }
-        }
-    }
-};
-elements.e_button = {
-    name: "E-Button",
-    color: "#ff6600",
-    behavior: behaviors.WALL,
-    category: "machines",
-    state: "solid",
-    desc: "Clique dessus pour envoyer du courant aux pixels voisins.",
-    tool: function(pixel) {
-        pixel.charge = 1;
-        for (let dy = -1; dy <= 1; dy++) {
-            for (let dx = -1; dx <= 1; dx++) {
-                if (dx === 0 && dy === 0) continue;
-                let neighbor = getPixel(pixel.x + dx, pixel.y + dy);
-                if (neighbor) {
-                    doElectricity(neighbor);
+                    chargePixel(n);
                 }
             }
         }
