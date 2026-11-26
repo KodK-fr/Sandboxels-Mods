@@ -29,11 +29,16 @@ elements.e_button = {
     hardness: 0.2,
     conduct: 1,
     desc: "Clique dessus pour envoyer une impulsion électrique aux voisins.",
+    
+    onMouseDown: function() {
+    console.log("CLIC GAUCHE DÉTECTÉ !");
+    },
 
-    onClicked: function(pixel, element) {
-        sendButtonElectricity(pixel, true);
-    }
-};
+    onClicked: function(pixel) {
+        console.log("PIXEL CLIQUÉ :", pixel);
+        chargePixel(pixel);
+    },
+    };
 
 elements.push_button = {
     name: "Push Button",
