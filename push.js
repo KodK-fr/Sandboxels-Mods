@@ -1,4 +1,3 @@
-// Bouton impulsif : un clic = une impulsion
 elements.e_button = {
     name: "E-Button",
     color: "#ff6600",
@@ -7,7 +6,8 @@ elements.e_button = {
     category: "machines",
     state: "solid",
     conduct: 1,
-    desc: "Clique pour envoyer une impulsion électrique aux voisins.",
+    canPlace: true,
+    desc: "Clique dessus pour envoyer une impulsion électrique aux voisins.",
     tool: function(pixel) {
         let dirs = [[0,-1],[0,1],[-1,0],[1,0],[-1,-1],[1,-1],[-1,1],[1,1]];
         for (let [dx, dy] of dirs) {
@@ -19,7 +19,6 @@ elements.e_button = {
     }
 };
 
-// Bouton poussoir : clic = ON (courant continu), re-clic = OFF
 elements.push_button = {
     name: "Push Button",
     color: "#4488ff",
@@ -28,6 +27,7 @@ elements.push_button = {
     category: "machines",
     state: "solid",
     conduct: 1,
+    canPlace: true,
     desc: "Clique pour allumer/éteindre le courant vers les voisins.",
     tool: function(pixel) {
         pixel.on = !pixel.on;
