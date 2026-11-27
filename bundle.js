@@ -499,28 +499,28 @@ elements.aspirateur = {
 };
 
 // =========================================
-// 5. GAZ CONVOYÉ
+// 5. GAZ CONVOYÉ (v2 - transport réel)
 // =========================================
 
 // --- PIPELINE ---
 elements.pipeline = {
     name: "Pipeline",
     color: "#555e6a",
-    colorOn: "#7a99b0",
     behavior: behaviors.WALL,
     category: "machines",
     state: "solid",
     conduct: 0,
     hardness: 0.4,
-    desc: "Conduit de gaz. Relier une entrée à une sortie via des pipelines pour transporter le gaz.",
+    desc: "Conduit de gaz. Transporte le gaz de l'entrée vers la sortie.",
 
     properties: {
-        pressurized: false
+        gasType: null,
+        gasColor: null
     },
 
     tick: function(pixel) {
-        if (pixel.pressurized) {
-            pixel.color = "#7a99b0";
+        if (pixel.gasType && pixel.gasColor) {
+            pixel.color = pixel.gasColor;
         } else {
             pixel.color = "#555e6a";
         }
@@ -531,29 +531,68 @@ elements.pipeline = {
 elements.entree_gaz = {
     name: "Entrée de Gaz",
     color: "#33bb55",
+    colorOn: "#66ff88",
     behavior: behaviors.WALL,
     category: "machines",
     state: "solid",
     conduct: 0,
     hardness: 0.4,
-    desc: "Injecte du gaz dans les pipelines adjacents.",
+    desc: "Aspire le gaz à proximité et l'injecte dans les pipelines adjacents.",
 
     properties: {
-        emitTimer: 0
+        suckTimer: 0
     },
 
     tick: function(pixel) {
-        pixel.emitTimer = (pixel.emitTimer || 0) + 1;
-        if (pixel.emitTimer < 2) return;
-        pixel.emitTimer = 0;
+        pixel.suckTimer = (pixel.suckTimer || 0) + 1;
+        if (pixel.suckTimer < 2) return;
+        pixel.suckTimer = 0;
 
+        // Chercher du gaz dans un rayon de 6
+        var radius = 6;
+        var gasFound = null;
+
+        for (var dx = -radius; dx <= radius; dx++) {
+            for (var dy = -radius; dy <= radius; dy++) {
+                if (dx*dx + dy*dy > radius*radius) continue;
+                if (dx === 0 && dy === 0) continue;
+
+                var p = getPixel(pixel.x + dx, pixel.y + dy);
+                if (!p || p.del) continue;
+
+                var info = elements[p.element];
+                if (info && info.state === "gas") {
+                    gasFound = p;
+                    break;
+                }
+            }
+            if (gasFound) break;
+        }
+
+        if (!gasFound) return;
+
+        // Récupérer le type et la couleur du gaz
+        var gasElement = gasFound.element;
+        var gasDef = elements[gasElement];
+        var gasColor = Array.isArray(gasDef.color)
+            ? gasDef.color[0]
+            : gasDef.color;
+
+        // Supprimer le gaz aspiré
+        deletePixel(gasFound.x, gasFound.y);
+
+        // Injecter dans les pipelines adjacents
         var dirs = [[-1,0],[1,0],[0,-1],[0,1]];
         for (var i = 0; i < dirs.length; i++) {
             var p = getPixel(pixel.x + dirs[i][0], pixel.y + dirs[i][1]);
             if (p && p.element === "pipeline") {
-                p.pressurized = true;
+                p.gasType = gasElement;
+                p.gasColor = gasColor;
             }
         }
+
+        // Flash visuel
+        pixel.color = "#66ff88";
     }
 };
 
@@ -561,35 +600,43 @@ elements.entree_gaz = {
 elements.sortie_gaz = {
     name: "Sortie de Gaz",
     color: "#cc3333",
+    colorOn: "#ff6644",
     behavior: behaviors.WALL,
     category: "machines",
     state: "solid",
     conduct: 0,
     hardness: 0.4,
-    desc: "Libère le gaz dans l'espace adjacent si un pipeline pressurisé est connecté.",
+    desc: "Libère le gaz transporté par les pipelines adjacents.",
 
     properties: {
         releaseTimer: 0
     },
 
     tick: function(pixel) {
+        // Vérifier si un pipeline adjacent a du gaz
         var dirs = [[-1,0],[1,0],[0,-1],[0,1]];
-        var hasGas = false;
+        var gasType = null;
+        var gasColor = null;
 
         for (var i = 0; i < dirs.length; i++) {
             var p = getPixel(pixel.x + dirs[i][0], pixel.y + dirs[i][1]);
-            if (p && p.element === "pipeline" && p.pressurized) {
-                hasGas = true;
+            if (p && p.element === "pipeline" && p.gasType) {
+                gasType = p.gasType;
+                gasColor = p.gasColor;
                 break;
             }
         }
 
-        if (!hasGas) return;
+        if (!gasType) {
+            pixel.color = "#cc3333";
+            return;
+        }
 
         pixel.releaseTimer = (pixel.releaseTimer || 0) + 1;
-        if (pixel.releaseTimer < 3) return;
+        if (pixel.releaseTimer < 2) return;
         pixel.releaseTimer = 0;
 
+        // Trouver un espace vide adjacent
         var emptySpots = [];
         for (var i = 0; i < dirs.length; i++) {
             var x = pixel.x + dirs[i][0];
@@ -601,27 +648,34 @@ elements.sortie_gaz = {
 
         if (emptySpots.length > 0) {
             var spot = emptySpots[Math.floor(Math.random() * emptySpots.length)];
-            createPixel("gas", spot[0], spot[1]);
+            createPixel(gasType, spot[0], spot[1]);
+
+            // Flash visuel
+            pixel.color = "#ff6644";
         }
     }
 };
 
-// --- PROPAGATION DE LA PRESSION ---
+// --- PROPAGATION DU GAZ DANS LES PIPELINES ---
 runEveryTick(function() {
-    // Chaque pipeline pressurisé propage la pression à ses voisins
-    // (1 pixel par tick = effet de vague visible)
     for (var p of currentPixels) {
-        if (p.element !== "pipeline" || !p.pressurized) continue;
+        if (p.element !== "pipeline" || !p.gasType) continue;
 
+        // Propager le gaz aux pipelines voisins vides
         var dirs = [[-1,0],[1,0],[0,-1],[0,1]];
         for (var i = 0; i < dirs.length; i++) {
             var n = getPixel(p.x + dirs[i][0], p.y + dirs[i][1]);
-            if (n && n.element === "pipeline" && !n.pressurized) {
-                n.pressurized = true;
+            if (n && n.element === "pipeline" && !n.gasType) {
+                n.gasType = p.gasType;
+                n.gasColor = p.gasColor;
             }
         }
     }
 });
+
+// --- RÉINITIALISATION QUAND LE GAZ EST LIBÉRÉ ---
+// Quand la sortie libère, elle "consomme" le gaz du pipeline
+// (on le garde simple : le pipeline reste chargé, l'entrée ré-aspire)   
 
 // =========================================
 // FIN DU BUNDLE
